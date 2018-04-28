@@ -38,13 +38,14 @@ from ..core.validation import error
 from ..core.validation.errors import (
     INCOMPATIBLE_BOX_EDIT_RENDERER, INCOMPATIBLE_POINT_DRAW_RENDERER,
     INCOMPATIBLE_POLY_DRAW_RENDERER, INCOMPATIBLE_POLY_EDIT_RENDERER,
-    INCOMPATIBLE_POLY_EDIT_VERTEX_RENDERER
+    INCOMPATIBLE_POLY_EDIT_VERTEX_RENDERER, NO_RANGE_TOOL_RANGES
 )
 from ..model import Model
 
 from .annotations import BoxAnnotation, PolyAnnotation
 from .callbacks import Callback
 from .glyphs import XYGlyph, Rect, Patches, MultiLine
+from .ranges import Range1d
 from .renderers import Renderer, GlyphRenderer
 from .layouts import LayoutDOM
 
@@ -168,6 +169,53 @@ class PanTool(Drag):
     pan horizontally across the width of the plot, or vertically across the
     height of the plot.
     """)
+
+DEFAULT_RANGE_OVERLAY = lambda: BoxAnnotation(
+    level="overlay",
+    render_mode="css",
+    fill_color="lightgrey",
+    fill_alpha=0.5,
+    line_color="black",
+    line_alpha=1.0,
+    line_width=2,
+    line_dash=[4, 4]
+)
+
+class RangeTool(Drag):
+    ''' *toolbar icon*: |range_icon|
+
+    The range tool allows the user to update range objects for either or both
+    of the x- or y-dimensions by dragging a corresponding shaded annotation to
+    move it or change its boundaries.
+
+    A common use case is to add this tool to a plot with a large fixed range,
+    but to configure the tool range from a different plot. When the user
+    manipulates the overlay, the range of the second plot will be updated
+    automatically.
+
+    .. |range_icon| image:: /_images/icons/Range.png
+        :height: 18pt
+
+    '''
+
+    x_range = Instance(Range1d, help="""
+    A range synchronized to the x-dimension of the overlay. If None, the overlay
+    will span the entire x-dimension.
+    """)
+
+    y_range = Instance(Range1d, help="""
+    A range synchronized to the y-dimension of the overlay. If None, the overlay
+    will span the entire y-dimension.
+    """)
+
+    overlay = Instance(BoxAnnotation, default=DEFAULT_RANGE_OVERLAY, help="""
+    A shaded annotation drawn to indicate the configured ranges.
+    """)
+
+    @error(NO_RANGE_TOOL_RANGES)
+    def _check_no_range_tool_ranges(self):
+        if self.x_range is None and self.y_range is None:
+            return "At least one of RangeTool.x_range or RangeTool.y_range must be configured"
 
 class WheelPanTool(Scroll):
     ''' *toolbar icon*: |wheel_pan_icon|
